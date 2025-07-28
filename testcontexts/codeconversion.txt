@@ -1,0 +1,88 @@
+//selenium code
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+import static org.junit.Assert.assertTrue;
+
+public class SearchTShirtsTest {
+    private WebDriver driver;
+
+    @Before
+    public void setUp() {
+        // System.setProperty("webdriver.chrome.driver", "/path/to/chromedriver");
+        driver = new ChromeDriver();
+    }
+
+    @Test
+    public void searchForTShirtsAndVerifyResult() {
+        driver.get("http://www.automationpractice.pl/index.php");
+
+        // Search for 'T-Shirts'
+        WebElement searchBox = driver.findElement(By.name("search_query"));
+        searchBox.sendKeys("T-Shirts");
+
+        WebElement searchButton = driver.findElement(By.name("submit_search"));
+        searchButton.click();
+
+        // Wait for the heading indicating results are loaded
+        boolean headingFound = driver.getPageSource().matches("(?s).*result has been found.*");
+        assertTrue("Results heading should be visible", headingFound);
+
+        // Verify 'Faded Short Sleeve T-shirts' is in the main search results
+        WebElement centerColumn = driver.findElement(By.id("center_column"));
+        boolean productFound = centerColumn.getText().contains("Faded Short Sleeve T-shirts");
+        assertTrue("'Faded Short Sleeve T-shirts' should be in the search results", productFound);
+    }
+
+    @After
+    public void tearDown() {
+        if (driver != null) {
+            driver.quit();
+        }
+    }
+}
+
+//Cypress code
+const Ajv = require('ajv');
+const ajv = new Ajv();
+
+const productSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'number' },
+    title: { type: 'string' },
+    price: { type: 'number' },
+    category: { type: 'string' },
+    description: { type: 'string' },
+  },
+  required: ['id', 'title', 'price', 'category', 'description'],
+};
+
+describe('GET /products/1 returns valid product', () => {
+  it('should return a valid product with correct schema', () => {
+    cy.request('https://fakestoreapi.com/products/1').then((response) => {
+      expect(response.status).to.eq(200);
+
+      const data = response.body;
+      expect(data).to.have.property('id');
+      expect(data).to.have.property('title');
+      expect(data).to.have.property('price');
+      expect(data).to.have.property('category');
+      expect(data).to.have.property('description');
+
+      // Validate schema
+      const validate = ajv.compile(productSchema);
+      const valid = validate(data);
+      if (!valid) {
+        // Print schema validation errors to Cypress log
+        cy.log('Schema validation errors:', JSON.stringify(validate.errors));
+      }
+      expect(valid, 'Schema validation').to.be.true;
+
+      // Log product title and price
+      cy.log(`Product title: ${data.title}`);
+      cy.log(`Product price: ${data.price}`);
+    });
+  });
+});
